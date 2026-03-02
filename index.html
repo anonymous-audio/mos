@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Verifiability Test</title>
+<!-- <style>
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+h1 { margin: 0 0 12px; }
+h2 { margin: 24px 0 8px; }
+table.tests { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.tests td, .tests th { border: 1px solid #ddd; padding: 8px; vertical-align: middle; }
+.tests tr:nth-child(even){ background: #fafafa; }
+.tests th { background: #f2f2f2; text-align: left; }
+audio { width: 260px; }
+.select-cell select { width: 160px; }
+.center { text-align: center; }
+.muted { color: #666; font-size: 0.95rem; }
+.hr { height: 1px; background: #eee; margin: 16px 0; }
+.note { background: #fff9c4; padding: 8px 12px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>Verifiability Test</h1>
+<p class="note">For each question, listen to both clips and decide if they are the <strong>same speaker</strong> or <strong>different speakers</strong>. Then mark your confidence.</p> -->
+
+<style type="text/css">
+	table.tests {
+		width: 85%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	table.tests th {
+		text-align: center;
+	}
+
+	table.tests td {
+		text-align: center;
+		vertical-align: middle;
+		border: 2px solid #000000;
+		width: 4%;
+	}
+
+	table.tests td+td {
+		width: 12%;
+	}
+
+	table.tests td+td+td {
+		width: 12%;
+	}
+
+	table.tests td+td+td+td {
+		width: 12%;
+	}
+
+	table.tests td+td+td+td+td {
+		width: 9%;
+	}
+
+	table.tests td+td+td+td+td+td {
+		width: auto;
+	}
+
+	table.tests tr {
+		border: 2px solid #500000;
+		height: 60px;
+		vertical-align: middle;
+		margin: 0 auto;
+		padding: 0;
+	}
+
+	table.tests tr {
+		margin: 0 auto;
+		padding: 0;
+	}
+
+	table.tests tr:nth-child(even) {
+		background-color: #F8F5E6;
+	}
+
+	table.tests tr:nth-child(odd) {
+		background: #EEE;
+	}
+
+	table.tests tr:first-child {
+		background-color: #500000;
+		color: #FFF;
+		font-weight: bold;
+		font-size: 1.25em;
+	}
+
+	table.tests tr:first-child:hover {
+		background-color: #500000;
+	}
+
+	table.tests tr:hover {
+		background-color: #336FA4
+	}
+
+	table.tests tr.complete {
+		background-color: #6FB89B;
+	}
+
+	table.tests input.mos {
+		display: block;
+		width: 100%;
+		height: 20px;
+	}
+
+	table.tests .question_id {
+		width: 21%;
+	}
+
+	table.tests td.A,
+	table.tests td.B,
+	table.tests td.X {
+		width: 27%;
+	}
+
+	table.tests .X {
+		border-right: 3px solid #500000;
+	}
+
+	input[type=radio] {
+		width: 20px;
+		height: 60px;
+		border: 10px solid #CCC;
+		border-radius: 50%;
+		vertical-align: middle;
+	}
+
+	input[type=radio].A {
+		float: right;
+	}
+
+	input[type=radio].B {
+		float: left;
+	}
+
+	audio {
+		vertical-align: middle;
+		width: 150px;
+	}
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+	//The magic that lets us find the unselected questions
+
+	$(document).ready(function () {
+		$('#submitButton').click(check_buttons);
+	});
+
+	var check_buttons = function () {
+		//Get all the radio buttons
+		n_ckd = $('input[type=radio]:not(:checked)').toArray().reduce((acc, val) => acc.includes(val.name) ? acc : acc.concat(val.name), []);
+
+		//Get all the checked buttons
+		ckd = $('input[type=radio]:checked').toArray().reduce((acc, val) => acc.includes(val.name) ? acc : acc.concat(val.name), []);
+
+		//Filter out all the checked radio buttons from the not checked list
+		//We should get NOTHING if we've filled in every option
+		var unfilled = n_ckd.filter(function (x) { return !ckd.includes(x) });
+
+		if (unfilled.length > 0) {
+			alert("You have not rated your confidence for one or more of the questions.\nThe first one missing an answer is: " + unfilled[0].substring(5, 8));
+			var any_unfilled = true;
+		}
+		else {
+			var any_unfilled = false;
+		}
+
+		var unselected = $('select.overall').toArray().filter(function (x) { return x.value == 0 })
+
+		if (unselected.length > 0) {
+			alert("You have not rated 'Same or different?' for one or more of the questions.\nThe first one missing an answer is: " + unselected[0].name.substring(5, 8))
+		}
+
+		return !any_unfilled && !(unselected.length)
+	}
+</script>
+<script>
+	var reload_audio = function (e) {
+		console.log(e)
+
+
+		//Add in a nocache cheat
+		var src_selector = 'audio[id=' + e + '] > source';
+		$(src_selector)[0].src = $(src_selector)[0].src + "?nocache=" + new Date().getTime()
+		$('audio[id=' + e + ']')[0].load()
+		console.log($('audio[id=' + e + ']')[0].currentSrc)
+	}
+</script>
+<script>
+	var onclick_nocache = function (e) {
+		var currentSrc = $('audio[id=' + e + ']')[0].currentSrc;
+		$('audio[id=' + e + ']')[0].currentSrc = currentSrc + "?nocache=" + new Date().getTime();
+		$('audio[id=' + e + ']>source')[0].src = currentSrc + "?nocache=" + new Date().getTime();
+		$('audio[id=' + e + ']>a')[0].href = currentSrc + "?nocache=" + new Date().getTime();
+	}
+</script>
+<style type="text/css">
+	table,
+	th,
+	td {
+		border: 1px solid black;
+	}
+</style>
+<h1><strong>Emotion Perception Test</strong></h1>
+<hr>
+
+<h3>
+  Below is a list of recordings organized in rows. In each row, you will see two clips: A &amp; B.
+  Please listen to both recordings and decide which clip better matches the <strong>target emotion</strong>
+  shown in the question (Happy, Angry, Sad, or Neutral). Once you choose, please rate how confident you are in your choice.
+</h3>
+
+<ul>
+  <li>
+    The target emotion for each row will be one of four categories:
+    <strong>Happy</strong>, <strong>Angry</strong>, <strong>Sad</strong>, or <strong>Neutral</strong>.
+  </li>
+
+  <li>
+    Focus on <strong>how the person sounds</strong> (their tone of voice and expressiveness),
+    rather than the words being said.
+  </li>
+
+  <li>
+    There are seven (7) levels of confidence, as shown in the tables below.
+    "|" means that your confidence level is between two levels.
+    For example, the "|" between "Not at all confident" and "Somewhat confident" means that your confidence level is
+    more than "Not at all confident" but less than "Somewhat confident".
+  </li>
+
+  <li>
+    You may listen to a clip more than once if needed; click the play button to replay.
+  </li>
+
+  <li>
+    Your responses will be manually screened to ensure that you made a serious effort to rate the recordings.
+    If your answers are determined to be random or contain inconsistent answers, the task may be rejected and you may not receive payment.
+  </li>
+
+  <li>
+    Please perform these tasks in a quiet place using a pair of good headphones.
+    It is recommended that you set the volume a bit higher than normal for these tasks.
+  </li>
+
+  <li>
+    If you are having trouble viewing or listening to the sound clips, please try completing the test in Google Chrome.
+  </li>
+
+  <li>
+    Please make sure that you've finished all the questions before submitting.
+  </li>
+</ul>
+
+<hr>
+
+<h2>
+  <strong>
+    In each question, choose which clip (A or B) better matches the target emotion. Then rate how confident you are in your answer.
+  </strong>
+</h2>
+
+<div class="hr"></div>
+<h2>Set 1</h2>
+<table class="tests">
+	<tbody>
+		<tr>
+			<th>QuestionID</th>
+			<th>  Clip A  </th>
+			<th>  Clip B  </th>
+			<th>Which is more neutral?</th>
+			<th>Not at all confident</th>
+			<th>|</th>
+			<th>Somewhat confident</th>
+			<th>|</th>
+			<th>Quite a bit confident</th>
+			<th>|</th>
+			<th>Extremely confident</th>
+		</tr>
+        <tr>
+            <td>Q1</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src1.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth1.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN1_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN1" type="radio" value="1" /></td>
+            <td class="center"><input name="AN1" type="radio" value="2" /></td>
+            <td class="center"><input name="AN1" type="radio" value="3" /></td>
+            <td class="center"><input name="AN1" type="radio" value="4" /></td>
+            <td class="center"><input name="AN1" type="radio" value="5" /></td>
+            <td class="center"><input name="AN1" type="radio" value="6" /></td>
+            <td class="center"><input name="AN1" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q2</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth2.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src2.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN2_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN2" type="radio" value="1" /></td>
+            <td class="center"><input name="AN2" type="radio" value="2" /></td>
+            <td class="center"><input name="AN2" type="radio" value="3" /></td>
+            <td class="center"><input name="AN2" type="radio" value="4" /></td>
+            <td class="center"><input name="AN2" type="radio" value="5" /></td>
+            <td class="center"><input name="AN2" type="radio" value="6" /></td>
+            <td class="center"><input name="AN2" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q3</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src3.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth3.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN3_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN3" type="radio" value="1" /></td>
+            <td class="center"><input name="AN3" type="radio" value="2" /></td>
+            <td class="center"><input name="AN3" type="radio" value="3" /></td>
+            <td class="center"><input name="AN3" type="radio" value="4" /></td>
+            <td class="center"><input name="AN3" type="radio" value="5" /></td>
+            <td class="center"><input name="AN3" type="radio" value="6" /></td>
+            <td class="center"><input name="AN3" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q4</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth4.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src4.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN4_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN4" type="radio" value="1" /></td>
+            <td class="center"><input name="AN4" type="radio" value="2" /></td>
+            <td class="center"><input name="AN4" type="radio" value="3" /></td>
+            <td class="center"><input name="AN4" type="radio" value="4" /></td>
+            <td class="center"><input name="AN4" type="radio" value="5" /></td>
+            <td class="center"><input name="AN4" type="radio" value="6" /></td>
+            <td class="center"><input name="AN4" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q5</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth5.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src5.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN5_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN5" type="radio" value="1" /></td>
+            <td class="center"><input name="AN5" type="radio" value="2" /></td>
+            <td class="center"><input name="AN5" type="radio" value="3" /></td>
+            <td class="center"><input name="AN5" type="radio" value="4" /></td>
+            <td class="center"><input name="AN5" type="radio" value="5" /></td>
+            <td class="center"><input name="AN5" type="radio" value="6" /></td>
+            <td class="center"><input name="AN5" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q6</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src6.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth6.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN6_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN6" type="radio" value="1" /></td>
+            <td class="center"><input name="AN6" type="radio" value="2" /></td>
+            <td class="center"><input name="AN6" type="radio" value="3" /></td>
+            <td class="center"><input name="AN6" type="radio" value="4" /></td>
+            <td class="center"><input name="AN6" type="radio" value="5" /></td>
+            <td class="center"><input name="AN6" type="radio" value="6" /></td>
+            <td class="center"><input name="AN6" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q7</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src7.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth7.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN7_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN7" type="radio" value="1" /></td>
+            <td class="center"><input name="AN7" type="radio" value="2" /></td>
+            <td class="center"><input name="AN7" type="radio" value="3" /></td>
+            <td class="center"><input name="AN7" type="radio" value="4" /></td>
+            <td class="center"><input name="AN7" type="radio" value="5" /></td>
+            <td class="center"><input name="AN7" type="radio" value="6" /></td>
+            <td class="center"><input name="AN7" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q8</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth8.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src8.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN8_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN8" type="radio" value="1" /></td>
+            <td class="center"><input name="AN8" type="radio" value="2" /></td>
+            <td class="center"><input name="AN8" type="radio" value="3" /></td>
+            <td class="center"><input name="AN8" type="radio" value="4" /></td>
+            <td class="center"><input name="AN8" type="radio" value="5" /></td>
+            <td class="center"><input name="AN8" type="radio" value="6" /></td>
+            <td class="center"><input name="AN8" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q9</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src9.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth9.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN9_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN9" type="radio" value="1" /></td>
+            <td class="center"><input name="AN9" type="radio" value="2" /></td>
+            <td class="center"><input name="AN9" type="radio" value="3" /></td>
+            <td class="center"><input name="AN9" type="radio" value="4" /></td>
+            <td class="center"><input name="AN9" type="radio" value="5" /></td>
+            <td class="center"><input name="AN9" type="radio" value="6" /></td>
+            <td class="center"><input name="AN9" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q10</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/resynth10.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/angry_to_neutral/src10.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="AN10_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="AN10" type="radio" value="1" /></td>
+            <td class="center"><input name="AN10" type="radio" value="2" /></td>
+            <td class="center"><input name="AN10" type="radio" value="3" /></td>
+            <td class="center"><input name="AN10" type="radio" value="4" /></td>
+            <td class="center"><input name="AN10" type="radio" value="5" /></td>
+            <td class="center"><input name="AN10" type="radio" value="6" /></td>
+            <td class="center"><input name="AN10" type="radio" value="7" /></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="hr"></div>
+<h2>Set 2</h2>
+<table class="tests">
+	<tbody>
+		<tr>
+			<th>QuestionID</th>
+			<th>  Clip A  </th>
+			<th>  Clip B  </th>
+			<th>Which is more neutral?</th>
+			<th>Not at all confident</th>
+			<th>|</th>
+			<th>Somewhat confident</th>
+			<th>|</th>
+			<th>Quite a bit confident</th>
+			<th>|</th>
+			<th>Extremely confident</th>
+		</tr>
+
+        <tr>
+            <td>Q1</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth1.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src1.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN1_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN1" type="radio" value="1" /></td>
+            <td class="center"><input name="HN1" type="radio" value="2" /></td>
+            <td class="center"><input name="HN1" type="radio" value="3" /></td>
+            <td class="center"><input name="HN1" type="radio" value="4" /></td>
+            <td class="center"><input name="HN1" type="radio" value="5" /></td>
+            <td class="center"><input name="HN1" type="radio" value="6" /></td>
+            <td class="center"><input name="HN1" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q2</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src2.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth2.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN2_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN2" type="radio" value="1" /></td>
+            <td class="center"><input name="HN2" type="radio" value="2" /></td>
+            <td class="center"><input name="HN2" type="radio" value="3" /></td>
+            <td class="center"><input name="HN2" type="radio" value="4" /></td>
+            <td class="center"><input name="HN2" type="radio" value="5" /></td>
+            <td class="center"><input name="HN2" type="radio" value="6" /></td>
+            <td class="center"><input name="HN2" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q3</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src3.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth3.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN3_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN3" type="radio" value="1" /></td>
+            <td class="center"><input name="HN3" type="radio" value="2" /></td>
+            <td class="center"><input name="HN3" type="radio" value="3" /></td>
+            <td class="center"><input name="HN3" type="radio" value="4" /></td>
+            <td class="center"><input name="HN3" type="radio" value="5" /></td>
+            <td class="center"><input name="HN3" type="radio" value="6" /></td>
+            <td class="center"><input name="HN3" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q4</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth4.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src4.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN4_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN4" type="radio" value="1" /></td>
+            <td class="center"><input name="HN4" type="radio" value="2" /></td>
+            <td class="center"><input name="HN4" type="radio" value="3" /></td>
+            <td class="center"><input name="HN4" type="radio" value="4" /></td>
+            <td class="center"><input name="HN4" type="radio" value="5" /></td>
+            <td class="center"><input name="HN4" type="radio" value="6" /></td>
+            <td class="center"><input name="HN4" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q5</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth5.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src5.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN5_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN5" type="radio" value="1" /></td>
+            <td class="center"><input name="HN5" type="radio" value="2" /></td>
+            <td class="center"><input name="HN5" type="radio" value="3" /></td>
+            <td class="center"><input name="HN5" type="radio" value="4" /></td>
+            <td class="center"><input name="HN5" type="radio" value="5" /></td>
+            <td class="center"><input name="HN5" type="radio" value="6" /></td>
+            <td class="center"><input name="HN5" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q6</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src6.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth6.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN6_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN6" type="radio" value="1" /></td>
+            <td class="center"><input name="HN6" type="radio" value="2" /></td>
+            <td class="center"><input name="HN6" type="radio" value="3" /></td>
+            <td class="center"><input name="HN6" type="radio" value="4" /></td>
+            <td class="center"><input name="HN6" type="radio" value="5" /></td>
+            <td class="center"><input name="HN6" type="radio" value="6" /></td>
+            <td class="center"><input name="HN6" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q7</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth7.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src7.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN7_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN7" type="radio" value="1" /></td>
+            <td class="center"><input name="HN7" type="radio" value="2" /></td>
+            <td class="center"><input name="HN7" type="radio" value="3" /></td>
+            <td class="center"><input name="HN7" type="radio" value="4" /></td>
+            <td class="center"><input name="HN7" type="radio" value="5" /></td>
+            <td class="center"><input name="HN7" type="radio" value="6" /></td>
+            <td class="center"><input name="HN7" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q8</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src8.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth8.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN8_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN8" type="radio" value="1" /></td>
+            <td class="center"><input name="HN8" type="radio" value="2" /></td>
+            <td class="center"><input name="HN8" type="radio" value="3" /></td>
+            <td class="center"><input name="HN8" type="radio" value="4" /></td>
+            <td class="center"><input name="HN8" type="radio" value="5" /></td>
+            <td class="center"><input name="HN8" type="radio" value="6" /></td>
+            <td class="center"><input name="HN8" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q9</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth9.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src9.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN9_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN9" type="radio" value="1" /></td>
+            <td class="center"><input name="HN9" type="radio" value="2" /></td>
+            <td class="center"><input name="HN9" type="radio" value="3" /></td>
+            <td class="center"><input name="HN9" type="radio" value="4" /></td>
+            <td class="center"><input name="HN9" type="radio" value="5" /></td>
+            <td class="center"><input name="HN9" type="radio" value="6" /></td>
+            <td class="center"><input name="HN9" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q10</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/src10.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/happy_to_neutral/resynth10.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="HN10_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="HN10" type="radio" value="1" /></td>
+            <td class="center"><input name="HN10" type="radio" value="2" /></td>
+            <td class="center"><input name="HN10" type="radio" value="3" /></td>
+            <td class="center"><input name="HN10" type="radio" value="4" /></td>
+            <td class="center"><input name="HN10" type="radio" value="5" /></td>
+            <td class="center"><input name="HN10" type="radio" value="6" /></td>
+            <td class="center"><input name="HN10" type="radio" value="7" /></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="hr"></div>
+<h2>Set 3</h2>
+<table class="tests">
+	<tbody>
+		<tr>
+			<th>QuestionID</th>
+			<th>  Clip A  </th>
+			<th>  Clip B  </th>
+			<th>Which is more neutral?</th>
+			<th>Not at all confident</th>
+			<th>|</th>
+			<th>Somewhat confident</th>
+			<th>|</th>
+			<th>Quite a bit confident</th>
+			<th>|</th>
+			<th>Extremely confident</th>
+		</tr>
+
+        <tr>
+            <td>Q1</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src1.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth1.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN1_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN1" type="radio" value="1" /></td>
+            <td class="center"><input name="SN1" type="radio" value="2" /></td>
+            <td class="center"><input name="SN1" type="radio" value="3" /></td>
+            <td class="center"><input name="SN1" type="radio" value="4" /></td>
+            <td class="center"><input name="SN1" type="radio" value="5" /></td>
+            <td class="center"><input name="SN1" type="radio" value="6" /></td>
+            <td class="center"><input name="SN1" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q2</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth2.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src2.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN2_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN2" type="radio" value="1" /></td>
+            <td class="center"><input name="SN2" type="radio" value="2" /></td>
+            <td class="center"><input name="SN2" type="radio" value="3" /></td>
+            <td class="center"><input name="SN2" type="radio" value="4" /></td>
+            <td class="center"><input name="SN2" type="radio" value="5" /></td>
+            <td class="center"><input name="SN2" type="radio" value="6" /></td>
+            <td class="center"><input name="SN2" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q3</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth3.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none" >
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src3.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN3_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN3" type="radio" value="1" /></td>
+            <td class="center"><input name="SN3" type="radio" value="2" /></td>
+            <td class="center"><input name="SN3" type="radio" value="3" /></td>
+            <td class="center"><input name="SN3" type="radio" value="4" /></td>
+            <td class="center"><input name="SN3" type="radio" value="5" /></td>
+            <td class="center"><input name="SN3" type="radio" value="6" /></td>
+            <td class="center"><input name="SN3" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q4</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src4.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth4.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN4_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN4" type="radio" value="1" /></td>
+            <td class="center"><input name="SN4" type="radio" value="2" /></td>
+            <td class="center"><input name="SN4" type="radio" value="3" /></td>
+            <td class="center"><input name="SN4" type="radio" value="4" /></td>
+            <td class="center"><input name="SN4" type="radio" value="5" /></td>
+            <td class="center"><input name="SN4" type="radio" value="6" /></td>
+            <td class="center"><input name="SN4" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q5</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth5.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src5.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN5_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN5" type="radio" value="1" /></td>
+            <td class="center"><input name="SN5" type="radio" value="2" /></td>
+            <td class="center"><input name="SN5" type="radio" value="3" /></td>
+            <td class="center"><input name="SN5" type="radio" value="4" /></td>
+            <td class="center"><input name="SN5" type="radio" value="5" /></td>
+            <td class="center"><input name="SN5" type="radio" value="6" /></td>
+            <td class="center"><input name="SN5" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q6</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src6.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth6.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN6_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN6" type="radio" value="1" /></td>
+            <td class="center"><input name="SN6" type="radio" value="2" /></td>
+            <td class="center"><input name="SN6" type="radio" value="3" /></td>
+            <td class="center"><input name="SN6" type="radio" value="4" /></td>
+            <td class="center"><input name="SN6" type="radio" value="5" /></td>
+            <td class="center"><input name="SN6" type="radio" value="6" /></td>
+            <td class="center"><input name="SN6" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q7</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth7.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src7.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN7_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN7" type="radio" value="1" /></td>
+            <td class="center"><input name="SN7" type="radio" value="2" /></td>
+            <td class="center"><input name="SN7" type="radio" value="3" /></td>
+            <td class="center"><input name="SN7" type="radio" value="4" /></td>
+            <td class="center"><input name="SN7" type="radio" value="5" /></td>
+            <td class="center"><input name="SN7" type="radio" value="6" /></td>
+            <td class="center"><input name="SN7" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q8</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src8.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth8.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN8_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN8" type="radio" value="1" /></td>
+            <td class="center"><input name="SN8" type="radio" value="2" /></td>
+            <td class="center"><input name="SN8" type="radio" value="3" /></td>
+            <td class="center"><input name="SN8" type="radio" value="4" /></td>
+            <td class="center"><input name="SN8" type="radio" value="5" /></td>
+            <td class="center"><input name="SN8" type="radio" value="6" /></td>
+            <td class="center"><input name="SN8" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q9</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth9.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src9.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN9_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN9" type="radio" value="1" /></td>
+            <td class="center"><input name="SN9" type="radio" value="2" /></td>
+            <td class="center"><input name="SN9" type="radio" value="3" /></td>
+            <td class="center"><input name="SN9" type="radio" value="4" /></td>
+            <td class="center"><input name="SN9" type="radio" value="5" /></td>
+            <td class="center"><input name="SN9" type="radio" value="6" /></td>
+            <td class="center"><input name="SN9" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+            <td>Q10</td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/src10.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td>
+                <audio controls preload="none">
+                    <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/sad_to_neutral/resynth10.wav" type="audio/wav" />
+                </audio>
+            </td>
+            <td class="select-cell">
+                <select class="form-control overall" name="SN10_overall">
+                    <option selected value="0">- select one -</option>
+                    <option value="1">Clip A</option>
+                    <option value="-1">Clip B</option>
+                </select>
+            </td>
+            <td class="center"><input name="SN10" type="radio" value="1" /></td>
+            <td class="center"><input name="SN10" type="radio" value="2" /></td>
+            <td class="center"><input name="SN10" type="radio" value="3" /></td>
+            <td class="center"><input name="SN10" type="radio" value="4" /></td>
+            <td class="center"><input name="SN10" type="radio" value="5" /></td>
+            <td class="center"><input name="SN10" type="radio" value="6" /></td>
+            <td class="center"><input name="SN10" type="radio" value="7" /></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="hr"></div>
+<h2>Set 4</h2>
+<table class="tests">
+    <tbody>
+    <tr>
+        <th>QuestionID</th>
+        <th>  Clip A  </th>
+        <th>  Clip B  </th>
+        <th>Which is more angry?</th>
+        <th>Not at all confident</th>
+        <th>|</th>
+        <th>Somewhat confident</th>
+        <th>|</th>
+        <th>Quite a bit confident</th>
+        <th>|</th>
+        <th>Extremely confident</th>
+        </tr>
+
+        <tr>
+        <td>Q1</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src1.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth1.wav" type="audio/wav" />
+        </audio>
+        </td>
+            <td class="select-cell">
+            <select class="form-control overall" name="NA1_overall">
+            <option selected value="0">- select one -</option>
+            <option value="1">Clip A</option>
+            <option value="-1">Clip B</option>
+            </select>
+        </td>
+        <td class="center"><input name="NA1" type="radio" value="1" /></td>
+        <td class="center"><input name="NA1" type="radio" value="2" /></td>
+        <td class="center"><input name="NA1" type="radio" value="3" /></td>
+        <td class="center"><input name="NA1" type="radio" value="4" /></td>
+        <td class="center"><input name="NA1" type="radio" value="5" /></td>
+        <td class="center"><input name="NA1" type="radio" value="6" /></td>
+        <td class="center"><input name="NA1" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q2</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth2.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src2.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA2_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA2" type="radio" value="1" /></td>
+        <td class="center"><input name="NA2" type="radio" value="2" /></td>
+        <td class="center"><input name="NA2" type="radio" value="3" /></td>
+        <td class="center"><input name="NA2" type="radio" value="4" /></td>
+        <td class="center"><input name="NA2" type="radio" value="5" /></td>
+        <td class="center"><input name="NA2" type="radio" value="6" /></td>
+        <td class="center"><input name="NA2" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q3</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth3.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src3.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA3_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA3" type="radio" value="1" /></td>
+        <td class="center"><input name="NA3" type="radio" value="2" /></td>
+        <td class="center"><input name="NA3" type="radio" value="3" /></td>
+        <td class="center"><input name="NA3" type="radio" value="4" /></td>
+        <td class="center"><input name="NA3" type="radio" value="5" /></td>
+        <td class="center"><input name="NA3" type="radio" value="6" /></td>
+        <td class="center"><input name="NA3" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q4</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src4.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth4.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA4_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA4" type="radio" value="1" /></td>
+        <td class="center"><input name="NA4" type="radio" value="2" /></td>
+        <td class="center"><input name="NA4" type="radio" value="3" /></td>
+        <td class="center"><input name="NA4" type="radio" value="4" /></td>
+        <td class="center"><input name="NA4" type="radio" value="5" /></td>
+        <td class="center"><input name="NA4" type="radio" value="6" /></td>
+        <td class="center"><input name="NA4" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q5</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth5.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src5.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA5_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA5" type="radio" value="1" /></td>
+        <td class="center"><input name="NA5" type="radio" value="2" /></td>
+        <td class="center"><input name="NA5" type="radio" value="3" /></td>
+        <td class="center"><input name="NA5" type="radio" value="4" /></td>
+        <td class="center"><input name="NA5" type="radio" value="5" /></td>
+        <td class="center"><input name="NA5" type="radio" value="6" /></td>
+        <td class="center"><input name="NA5" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q6</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src6.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth6.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA6_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA6" type="radio" value="1" /></td>
+        <td class="center"><input name="NA6" type="radio" value="2" /></td>
+        <td class="center"><input name="NA6" type="radio" value="3" /></td>
+        <td class="center"><input name="NA6" type="radio" value="4" /></td>
+        <td class="center"><input name="NA6" type="radio" value="5" /></td>
+        <td class="center"><input name="NA6" type="radio" value="6" /></td>
+        <td class="center"><input name="NA6" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q7</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth7.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src7.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA7_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA7" type="radio" value="1" /></td>
+        <td class="center"><input name="NA7" type="radio" value="2" /></td>
+        <td class="center"><input name="NA7" type="radio" value="3" /></td>
+        <td class="center"><input name="NA7" type="radio" value="4" /></td>
+        <td class="center"><input name="NA7" type="radio" value="5" /></td>
+        <td class="center"><input name="NA7" type="radio" value="6" /></td>
+        <td class="center"><input name="NA7" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q8</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src8.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth8.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA8_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA8" type="radio" value="1" /></td>
+        <td class="center"><input name="NA8" type="radio" value="2" /></td>
+        <td class="center"><input name="NA8" type="radio" value="3" /></td>
+        <td class="center"><input name="NA8" type="radio" value="4" /></td>
+        <td class="center"><input name="NA8" type="radio" value="5" /></td>
+        <td class="center"><input name="NA8" type="radio" value="6" /></td>
+        <td class="center"><input name="NA8" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q9</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth9.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src9.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA9_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA9" type="radio" value="1" /></td>
+        <td class="center"><input name="NA9" type="radio" value="2" /></td>
+        <td class="center"><input name="NA9" type="radio" value="3" /></td>
+        <td class="center"><input name="NA9" type="radio" value="4" /></td>
+        <td class="center"><input name="NA9" type="radio" value="5" /></td>
+        <td class="center"><input name="NA9" type="radio" value="6" /></td>
+        <td class="center"><input name="NA9" type="radio" value="7" /></td>
+        </tr>
+
+        <tr>
+        <td>Q10</td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/src10.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td>
+        <audio controls preload="none">
+        <source preload="none" src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_angry/resynth10.wav" type="audio/wav" />
+        </audio>
+        </td>
+        <td class="select-cell">
+        <select class="form-control overall" name="NA10_overall">
+        <option selected value="0">- select one -</option>
+        <option value="1">Clip A</option>
+        <option value="-1">Clip B</option>
+        </select>
+        </td>
+        <td class="center"><input name="NA10" type="radio" value="1" /></td>
+        <td class="center"><input name="NA10" type="radio" value="2" /></td>
+        <td class="center"><input name="NA10" type="radio" value="3" /></td>
+        <td class="center"><input name="NA10" type="radio" value="4" /></td>
+        <td class="center"><input name="NA10" type="radio" value="5" /></td>
+        <td class="center"><input name="NA10" type="radio" value="6" /></td>
+        <td class="center"><input name="NA10" type="radio" value="7" /></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="hr"></div>
+<h2>Set 5</h2>
+<table class="tests">
+  <tbody>
+    <tr>
+      <th>QuestionID</th>
+      <th>Clip A</th>
+      <th>Clip B</th>
+      <th>Which is more happy?</th>
+      <th>Not at all confident</th>
+      <th>|</th>
+      <th>Somewhat confident</th>
+      <th>|</th>
+      <th>Quite a bit confident</th>
+      <th>|</th>
+      <th>Extremely confident</th>
+    </tr>
+
+    <tr>
+      <td>Q1</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src1.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth1.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH1_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH1" type="radio" value="1" /></td>
+      <td class="center"><input name="NH1" type="radio" value="2" /></td>
+      <td class="center"><input name="NH1" type="radio" value="3" /></td>
+      <td class="center"><input name="NH1" type="radio" value="4" /></td>
+      <td class="center"><input name="NH1" type="radio" value="5" /></td>
+      <td class="center"><input name="NH1" type="radio" value="6" /></td>
+      <td class="center"><input name="NH1" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q2</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth2.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src2.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH2_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH2" type="radio" value="1" /></td>
+      <td class="center"><input name="NH2" type="radio" value="2" /></td>
+      <td class="center"><input name="NH2" type="radio" value="3" /></td>
+      <td class="center"><input name="NH2" type="radio" value="4" /></td>
+      <td class="center"><input name="NH2" type="radio" value="5" /></td>
+      <td class="center"><input name="NH2" type="radio" value="6" /></td>
+      <td class="center"><input name="NH2" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q3</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth3.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src3.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH3_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH3" type="radio" value="1" /></td>
+      <td class="center"><input name="NH3" type="radio" value="2" /></td>
+      <td class="center"><input name="NH3" type="radio" value="3" /></td>
+      <td class="center"><input name="NH3" type="radio" value="4" /></td>
+      <td class="center"><input name="NH3" type="radio" value="5" /></td>
+      <td class="center"><input name="NH3" type="radio" value="6" /></td>
+      <td class="center"><input name="NH3" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q4</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src4.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth4.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH4_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH4" type="radio" value="1" /></td>
+      <td class="center"><input name="NH4" type="radio" value="2" /></td>
+      <td class="center"><input name="NH4" type="radio" value="3" /></td>
+      <td class="center"><input name="NH4" type="radio" value="4" /></td>
+      <td class="center"><input name="NH4" type="radio" value="5" /></td>
+      <td class="center"><input name="NH4" type="radio" value="6" /></td>
+      <td class="center"><input name="NH4" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q5</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth5.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src5.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH5_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH5" type="radio" value="1" /></td>
+      <td class="center"><input name="NH5" type="radio" value="2" /></td>
+      <td class="center"><input name="NH5" type="radio" value="3" /></td>
+      <td class="center"><input name="NH5" type="radio" value="4" /></td>
+      <td class="center"><input name="NH5" type="radio" value="5" /></td>
+      <td class="center"><input name="NH5" type="radio" value="6" /></td>
+      <td class="center"><input name="NH5" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q6</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src6.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth6.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH6_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH6" type="radio" value="1" /></td>
+      <td class="center"><input name="NH6" type="radio" value="2" /></td>
+      <td class="center"><input name="NH6" type="radio" value="3" /></td>
+      <td class="center"><input name="NH6" type="radio" value="4" /></td>
+      <td class="center"><input name="NH6" type="radio" value="5" /></td>
+      <td class="center"><input name="NH6" type="radio" value="6" /></td>
+      <td class="center"><input name="NH6" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q7</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth7.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src7.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH7_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH7" type="radio" value="1" /></td>
+      <td class="center"><input name="NH7" type="radio" value="2" /></td>
+      <td class="center"><input name="NH7" type="radio" value="3" /></td>
+      <td class="center"><input name="NH7" type="radio" value="4" /></td>
+      <td class="center"><input name="NH7" type="radio" value="5" /></td>
+      <td class="center"><input name="NH7" type="radio" value="6" /></td>
+      <td class="center"><input name="NH7" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q8</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src8.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth8.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH8_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH8" type="radio" value="1" /></td>
+      <td class="center"><input name="NH8" type="radio" value="2" /></td>
+      <td class="center"><input name="NH8" type="radio" value="3" /></td>
+      <td class="center"><input name="NH8" type="radio" value="4" /></td>
+      <td class="center"><input name="NH8" type="radio" value="5" /></td>
+      <td class="center"><input name="NH8" type="radio" value="6" /></td>
+      <td class="center"><input name="NH8" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q9</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth9.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src9.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH9_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH9" type="radio" value="1" /></td>
+      <td class="center"><input name="NH9" type="radio" value="2" /></td>
+      <td class="center"><input name="NH9" type="radio" value="3" /></td>
+      <td class="center"><input name="NH9" type="radio" value="4" /></td>
+      <td class="center"><input name="NH9" type="radio" value="5" /></td>
+      <td class="center"><input name="NH9" type="radio" value="6" /></td>
+      <td class="center"><input name="NH9" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q10</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/src10.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_happy/resynth10.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NH10_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NH10" type="radio" value="1" /></td>
+      <td class="center"><input name="NH10" type="radio" value="2" /></td>
+      <td class="center"><input name="NH10" type="radio" value="3" /></td>
+      <td class="center"><input name="NH10" type="radio" value="4" /></td>
+      <td class="center"><input name="NH10" type="radio" value="5" /></td>
+      <td class="center"><input name="NH10" type="radio" value="6" /></td>
+      <td class="center"><input name="NH10" type="radio" value="7" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="hr"></div>
+<h2>Set 6</h2>
+<table class="tests">
+  <tbody>
+    <tr>
+      <th>QuestionID</th>
+      <th>Clip A</th>
+      <th>Clip B</th>
+      <th>Which is more sad?</th>
+      <th>Not at all confident</th>
+      <th>|</th>
+      <th>Somewhat confident</th>
+      <th>|</th>
+      <th>Quite a bit confident</th>
+      <th>|</th>
+      <th>Extremely confident</th>
+    </tr>
+
+    <tr>
+      <td>Q1</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src1.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth1.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS1_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS1" type="radio" value="1" /></td>
+      <td class="center"><input name="NS1" type="radio" value="2" /></td>
+      <td class="center"><input name="NS1" type="radio" value="3" /></td>
+      <td class="center"><input name="NS1" type="radio" value="4" /></td>
+      <td class="center"><input name="NS1" type="radio" value="5" /></td>
+      <td class="center"><input name="NS1" type="radio" value="6" /></td>
+      <td class="center"><input name="NS1" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q2</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth2.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src2.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS2_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS2" type="radio" value="1" /></td>
+      <td class="center"><input name="NS2" type="radio" value="2" /></td>
+      <td class="center"><input name="NS2" type="radio" value="3" /></td>
+      <td class="center"><input name="NS2" type="radio" value="4" /></td>
+      <td class="center"><input name="NS2" type="radio" value="5" /></td>
+      <td class="center"><input name="NS2" type="radio" value="6" /></td>
+      <td class="center"><input name="NS2" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q3</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth3.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src3.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS3_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS3" type="radio" value="1" /></td>
+      <td class="center"><input name="NS3" type="radio" value="2" /></td>
+      <td class="center"><input name="NS3" type="radio" value="3" /></td>
+      <td class="center"><input name="NS3" type="radio" value="4" /></td>
+      <td class="center"><input name="NS3" type="radio" value="5" /></td>
+      <td class="center"><input name="NS3" type="radio" value="6" /></td>
+      <td class="center"><input name="NS3" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q4</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src4.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth4.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS4_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS4" type="radio" value="1" /></td>
+      <td class="center"><input name="NS4" type="radio" value="2" /></td>
+      <td class="center"><input name="NS4" type="radio" value="3" /></td>
+      <td class="center"><input name="NS4" type="radio" value="4" /></td>
+      <td class="center"><input name="NS4" type="radio" value="5" /></td>
+      <td class="center"><input name="NS4" type="radio" value="6" /></td>
+      <td class="center"><input name="NS4" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q5</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth5.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src5.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS5_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS5" type="radio" value="1" /></td>
+      <td class="center"><input name="NS5" type="radio" value="2" /></td>
+      <td class="center"><input name="NS5" type="radio" value="3" /></td>
+      <td class="center"><input name="NS5" type="radio" value="4" /></td>
+      <td class="center"><input name="NS5" type="radio" value="5" /></td>
+      <td class="center"><input name="NS5" type="radio" value="6" /></td>
+      <td class="center"><input name="NS5" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q6</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src6.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth6.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS6_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS6" type="radio" value="1" /></td>
+      <td class="center"><input name="NS6" type="radio" value="2" /></td>
+      <td class="center"><input name="NS6" type="radio" value="3" /></td>
+      <td class="center"><input name="NS6" type="radio" value="4" /></td>
+      <td class="center"><input name="NS6" type="radio" value="5" /></td>
+      <td class="center"><input name="NS6" type="radio" value="6" /></td>
+      <td class="center"><input name="NS6" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q7</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth7.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src7.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS7_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS7" type="radio" value="1" /></td>
+      <td class="center"><input name="NS7" type="radio" value="2" /></td>
+      <td class="center"><input name="NS7" type="radio" value="3" /></td>
+      <td class="center"><input name="NS7" type="radio" value="4" /></td>
+      <td class="center"><input name="NS7" type="radio" value="5" /></td>
+      <td class="center"><input name="NS7" type="radio" value="6" /></td>
+      <td class="center"><input name="NS7" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q8</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src8.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth8.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS8_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS8" type="radio" value="1" /></td>
+      <td class="center"><input name="NS8" type="radio" value="2" /></td>
+      <td class="center"><input name="NS8" type="radio" value="3" /></td>
+      <td class="center"><input name="NS8" type="radio" value="4" /></td>
+      <td class="center"><input name="NS8" type="radio" value="5" /></td>
+      <td class="center"><input name="NS8" type="radio" value="6" /></td>
+      <td class="center"><input name="NS8" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q9</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth9.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src9.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS9_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS9" type="radio" value="1" /></td>
+      <td class="center"><input name="NS9" type="radio" value="2" /></td>
+      <td class="center"><input name="NS9" type="radio" value="3" /></td>
+      <td class="center"><input name="NS9" type="radio" value="4" /></td>
+      <td class="center"><input name="NS9" type="radio" value="5" /></td>
+      <td class="center"><input name="NS9" type="radio" value="6" /></td>
+      <td class="center"><input name="NS9" type="radio" value="7" /></td>
+    </tr>
+
+    <tr>
+      <td>Q10</td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/src10.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td>
+        <audio controls preload="none">
+          <source
+            preload="none"
+            src="https://anonymous-audio.github.io/EmoPerceptualTests/neutral_to_sad/resynth10.wav"
+            type="audio/wav"
+          />
+        </audio>
+      </td>
+      <td class="select-cell">
+        <select class="form-control overall" name="NS10_overall">
+          <option selected value="0">- select one -</option>
+          <option value="1">Clip A</option>
+          <option value="-1">Clip B</option>
+        </select>
+      </td>
+      <td class="center"><input name="NS10" type="radio" value="1" /></td>
+      <td class="center"><input name="NS10" type="radio" value="2" /></td>
+      <td class="center"><input name="NS10" type="radio" value="3" /></td>
+      <td class="center"><input name="NS10" type="radio" value="4" /></td>
+      <td class="center"><input name="NS10" type="radio" value="5" /></td>
+      <td class="center"><input name="NS10" type="radio" value="6" /></td>
+      <td class="center"><input name="NS10" type="radio" value="7" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<br />
+<br />
+<h2>Post-Survey</h2>
+<p>Have you participated in any such speech tasks before? <select class="post-survey" name="VS_PT_Experience">
+	<option selected="selected" value="0">- select one -</option>
+	<option value="1">Yes</option>
+	<option value="-1">No</option>
+</select></p>
+
+<p>How did you listen to the audio clips in this task? <select class="post-survey" name="VS_PT_listening">
+	<option selected="selected" value="0">- select one -</option>
+	<option value="1">Laptop speaker</option>
+	<option value="2">Headphones</option>
+	<option value="3">Desktop speaker</option>
+	<option value="4">Other</option>
+</select></p>
+
+<p>What is your native language? <input class="post-survey" maxlength="100" name="VS_PT_nativeLanguage" size="20"
+	type="text" /></p>
+
+<p>What other languages do you speak? <input class="post-survey" maxlength="100" name="VS_PT_otherLanguages" size="50"
+	type="text" /></p>
+
+<p>Please suggest comments for improving this study:</p>
+
+<p><textarea class="post-survey" cols="120" name="VS_PT_comments" rows="5"></textarea></p>
+
+</body>
+</html>
